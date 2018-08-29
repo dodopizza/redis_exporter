@@ -31,6 +31,7 @@ var (
 	showVersion      = flag.Bool("version", false, "Show version information and exit")
 	useCfBindings    = flag.Bool("use-cf-bindings", getEnvBool("REDIS_EXPORTER_USE-CF-BINDINGS"), "Use Cloud Foundry service bindings")
 	redisMetricsOnly = flag.Bool("redis-only-metrics", getEnvBool("REDIS_EXPORTER_REDIS_ONLY_METRICS"), "Whether to export go runtime metrics also")
+	useAzureCaches   = flag.Bool("use-azure-caches", false, "Use azure api to obtain targets")
 
 	// VERSION, BUILD_DATE, GIT_COMMIT are filled in by the build script
 	VERSION     = "<<< filled in by build >>>"
@@ -91,6 +92,12 @@ func main() {
 		}
 	case *useCfBindings:
 		addrs, passwords, aliases = exporter.GetCloudFoundryRedisBindings()
+	case *useAzureCaches:
+		var err error
+		addrs, passwords, aliases, err = exporter.GetAzureRedisServises()
+		if err != nil {
+			log.Fatal(err)
+		}
 	default:
 		addrs, passwords, aliases = exporter.LoadRedisArgs(*redisAddr, *redisPassword, *redisAlias, *separator)
 	}

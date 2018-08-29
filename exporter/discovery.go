@@ -1,10 +1,14 @@
 package exporter
 
 import (
+	"context"
 	"encoding/csv"
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/services/redis/mgmt/2018-03-01/redis"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/cloudfoundry-community/go-cfenv"
 	log "github.com/sirupsen/logrus"
 )
@@ -99,6 +103,42 @@ func GetCloudFoundryRedisBindings() (addrs, passwords, aliases []string) {
 	}
 
 	return
+}
+
+func GetAzureRedisServises() ([]string, []string, []string, error) {
+	var addrs []string
+	var passwords []string
+	var aliases []string
+
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	redisClient := redis.NewClient(os.Getenv("AZURE_SUBSCRIPTION_ID"))
+	groupClient := resources.NewGroupsClient(os.Getenv("AZURE_SUBSCRIPTION_ID"))
+	if err == nil {
+		redisClient.Authorizer = authorizer
+		groupClient.Authorizer = authorizer
+	} else {
+		return nil, nil, nil, err
+	}
+
+	groupsList, err := groupClient.List(context.Background(), "", nil)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	for _, resourceGroup := range groupsList.Values() {
+		listResultPage, _ := redisClient.ListByResourceGroup(context.Background(), *resourceGroup.Name)
+		for _, cache := range listResultPage.Values() {
+			keys, _ := redisClient.ListKeys(context.Background(), *resourceGroup.Name, *cache.Name)
+			EnableNonSslPort := *cache.Properties.EnableNonSslPort
+			if EnableNonSslPort {
+				addrs = append(addrs, "redis://"+*cache.Properties.HostName)
+			} else {
+				addrs = append(addrs, "rediss://"+*cache.Properties.HostName+":6380")
+			}
+			passwords = append(passwords, *keys.PrimaryKey)
+			aliases = append(aliases, *cache.Name)
+		}
+	}
+	return addrs, passwords, aliases, nil
 }
 
 func getAlternative(credentials map[string]interface{}, alternatives ...string) string {
