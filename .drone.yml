@@ -1,0 +1,6 @@
+pipeline:
+  docker:
+    image: plugins/docker
+    repo: dodoreg.azurecr.io/exporter/redis
+    tags: drone-io-test
+    registry: dodoreg.azurecr.io
