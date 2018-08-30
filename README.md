@@ -110,12 +110,13 @@ These settings take precedence over any configurations provided by [environment 
 
 ### Environment Variables
 
-Name               | Description
--------------------|------------
-REDIS_ADDR         | Address of Redis node(s)
-REDIS_PASSWORD     | Password to use when authenticating to Redis
-REDIS_ALIAS        | Alias name of Redis node(s)
-REDIS_FILE         | Path to file containing Redis node(s)
+Name                  | Description
+----------------------|------------
+REDIS_ADDR            | Address of Redis node(s)
+REDIS_PASSWORD        | Password to use when authenticating to Redis
+REDIS_ALIAS           | Alias name of Redis node(s)
+REDIS_FILE            | Path to file containing Redis node(s)
+AZURE_SUBSCRIPTION_ID | For azure dicovery
 
 ### What's exported?
 

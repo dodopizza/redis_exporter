@@ -2,6 +2,6 @@ pipeline:
   docker:
     image: plugins/docker
     repo: dodoreg.azurecr.io/exporter/redis
-    tags: drone-io-test
+    auto_tag: true
     registry: dodoreg.azurecr.io
     secrets: [ docker_username, docker_password ]
