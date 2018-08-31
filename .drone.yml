@@ -1,7 +1,16 @@
 pipeline:
-  docker:
+  restore_cache:
+    image: drillster/drone-volume-cache
+    restore: true
+    mount: /drone/docker
+  publish:
     image: plugins/docker
     repo: dodoreg.azurecr.io/exporter/redis
     auto_tag: true
     registry: dodoreg.azurecr.io
     secrets: [ docker_username, docker_password ]
+    storage_path: /drone/docker
+  rebuild_cache:
+    image: drillster/drone-volume-cache
+    restore: true
+    mount: /drone/docker
