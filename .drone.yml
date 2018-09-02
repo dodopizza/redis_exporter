@@ -1,25 +1,27 @@
-# pipeline:
+pipeline:
 #   restore_cache:
 #     image: drillster/drone-volume-cache
 #     restore: true
 #     mount: /drone/docker
-#   publish:
-#     image: plugins/docker
-#     repo: dodoreg.azurecr.io/exporter/redis
-#     tags: drone-io-test
-#     registry: dodoreg.azurecr.io
-#     secrets: [ docker_username, docker_password ]
-#     storage_path: /drone/docker
+  publish:
+    image: plugins/docker
+    repo: dodoreg.azurecr.io/exporter/redis
+    tags: drone-io-test
+    registry: dodoreg.azurecr.io
+    secrets: [ docker_username, docker_password ]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    
 #   rebuild_cache:
 #     image: drillster/drone-volume-cache
 #     restore: true
 #     mount: /drone/docker
 
-pipeline:
-  publish:
-    image: docker
-    commands:
-      - docker build .
-      - docker tag drone-io-test
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+# pipeline:
+#   publish:
+#     image: docker
+#     commands:
+#       - docker build .
+#       - docker tag drone-io-test
+#     volumes:
+#       - /var/run/docker.sock:/var/run/docker.sock
