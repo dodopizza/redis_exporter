@@ -3,7 +3,7 @@ pipeline:
 #     image: drillster/drone-volume-cache
 #     restore: true
 #     mount: /drone/docker
-  publish:
+  docker:
     image: plugins/docker
     repo: dodoreg.azurecr.io/exporter/redis
     tags: drone-io-test
