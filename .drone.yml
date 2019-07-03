@@ -1,9 +1,35 @@
-pipeline:
-  docker:
-    image: plugins/docker
-    repo: dodoreg.azurecr.io/exporter/redis
-    tags: drone-io-test
-    registry: dodoreg.azurecr.io
-    secrets: [ docker_username, docker_password ]
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+---
+kind: pipeline
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: build
+  pull: default
+  image: docker 
+  commands:
+  - docker build -t redis_exporter .
+  volumes:
+  - name: 2f7661722f72756e2f646f636b65722e736f636b
+    path: /var/run/docker.sock
+
+- name: push
+  pull: default
+  image: docker
+  commands:
+  - docker login $DOCKER_REGISTRY -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+  - docker tag redis_exporter dodoreg.azurecr.io/exporter/redis:$(cat version)
+  - docker push dodoreg.azurecr.io/exporter/redis:$(cat version)
+  environment:
+    DOCKER_REGISTRY:
+      from_secret: global_docker_registry
+    DOCKER_USERNAME:
+      from_secret: global_docker_registry_username
+    DOCKER_PASSWORD:
+      from_secret: global_docker_registry_password
+  volumes:
+  - name: 2f7661722f72756e2f646f636b65722e736f636b
+    path: /var/run/docker.sock
