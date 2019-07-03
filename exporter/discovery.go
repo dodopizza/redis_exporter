@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/redis/mgmt/2018-03-01/redis"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/cloudfoundry-community/go-cfenv"
 	log "github.com/sirupsen/logrus"
 )
@@ -105,22 +106,27 @@ func GetCloudFoundryRedisBindings() (addrs, passwords, aliases []string) {
 	return
 }
 
-func GetAzureRedisServises() ([]string, []string, []string, error) {
+func GetAzureRedisServices() ([]string, []string, []string, error) {
 	var addrs []string
 	var passwords []string
 	var aliases []string
 
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
-	redisClient := redis.NewClient(os.Getenv("AZURE_SUBSCRIPTION_ID"))
-	groupClient := resources.NewGroupsClient(os.Getenv("AZURE_SUBSCRIPTION_ID"))
-	if err == nil {
-		redisClient.Authorizer = authorizer
-		groupClient.Authorizer = authorizer
-	} else {
+	if err != nil {
 		return nil, nil, nil, err
 	}
+	env, _ := azure.EnvironmentFromName(os.Getenv("AZURE_ENVIRONMENT"))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	redisClient := redis.NewClientWithBaseURI(env.ResourceManagerEndpoint, os.Getenv("AZURE_SUBSCRIPTION_ID"))
+	redisClient.Authorizer = authorizer
+
+	groupClient := resources.NewGroupsClientWithBaseURI(env.ResourceManagerEndpoint, os.Getenv("AZURE_SUBSCRIPTION_ID"))
+	groupClient.Authorizer = authorizer
 
 	groupsList, err := groupClient.List(context.Background(), "", nil)
+
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -134,8 +140,11 @@ func GetAzureRedisServises() ([]string, []string, []string, error) {
 			} else {
 				addrs = append(addrs, "rediss://"+*cache.Properties.HostName+":6380")
 			}
-			passwords = append(passwords, *keys.PrimaryKey)
+			if keys.PrimaryKey == nil {
+				log.Warnf("ERROR: You have no rights to read redis keys for %s\n", *cache.Name)
+			}
 			aliases = append(aliases, *cache.Name)
+			passwords = append(passwords, *keys.PrimaryKey)
 		}
 	}
 	return addrs, passwords, aliases, nil

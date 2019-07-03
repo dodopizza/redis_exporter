@@ -94,7 +94,7 @@ func main() {
 		addrs, passwords, aliases = exporter.GetCloudFoundryRedisBindings()
 	case *useAzureCaches:
 		var err error
-		addrs, passwords, aliases, err = exporter.GetAzureRedisServises()
+		addrs, passwords, aliases, err = exporter.GetAzureRedisServices()
 		if err != nil {
 			log.Fatal(err)
 		}
