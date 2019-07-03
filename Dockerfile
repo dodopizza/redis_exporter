@@ -24,7 +24,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags  " -X main.VERSION=$TAG -X main.C
 # release container
 #
 FROM alpine:latest
-#RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates
 WORKDIR /bin/
 COPY --from=0 /go/src/github.com/oliver006/redis_exporter/ .
 
