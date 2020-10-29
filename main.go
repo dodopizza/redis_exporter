@@ -1,20 +1,25 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime"
 	"strconv"
+<<<<<<< HEAD
+=======
+	"time"
+>>>>>>> v.1.12.1-dodo
 
-	"github.com/oliver006/redis_exporter/exporter"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
 
 var (
+<<<<<<< HEAD
 	redisAddr        = flag.String("redis.addr", getEnv("REDIS_ADDR", ""), "Address of one or more redis nodes, separated by separator")
 	redisFile        = flag.String("redis.file", getEnv("REDIS_FILE", ""), "Path to file containing one or more redis nodes, separated by newline. NOTE: mutually exclusive with redis.addr")
 	redisPassword    = flag.String("redis.password", getEnv("REDIS_PASSWORD", ""), "Password for one or more redis nodes, separated by separator")
@@ -37,6 +42,14 @@ var (
 	VERSION     = "<<< filled in by build >>>"
 	BUILD_DATE  = "<<< filled in by build >>>"
 	COMMIT_SHA1 = "<<< filled in by build >>>"
+=======
+	/*
+		BuildVersion, BuildDate, BuildCommitSha are filled in by the build script
+	*/
+	BuildVersion   = "<<< filled in by build >>>"
+	BuildDate      = "<<< filled in by build >>>"
+	BuildCommitSha = "<<< filled in by build >>>"
+>>>>>>> v.1.12.1-dodo
 )
 
 func getEnv(key string, defaultVal string) string {
@@ -46,14 +59,56 @@ func getEnv(key string, defaultVal string) string {
 	return defaultVal
 }
 
+<<<<<<< HEAD
 func getEnvBool(key string) (envValBool bool) {
 	if envVal, ok := os.LookupEnv(key); ok {
 		envValBool, _ = strconv.ParseBool(envVal)
 	}
 	return
+=======
+func getEnvBool(key string, defaultVal bool) bool {
+	if envVal, ok := os.LookupEnv(key); ok {
+		envBool, err := strconv.ParseBool(envVal)
+		if err == nil {
+			return envBool
+		}
+	}
+	return defaultVal
+>>>>>>> v.1.12.1-dodo
 }
 
 func main() {
+	var (
+		redisAddr               = flag.String("redis.addr", getEnv("REDIS_ADDR", "redis://localhost:6379"), "Address of the Redis instance to scrape")
+		redisUser               = flag.String("redis.user", getEnv("REDIS_USER", ""), "User name to use for authentication (Redis ACL for Redis 6.0 and newer)")
+		redisPwd                = flag.String("redis.password", getEnv("REDIS_PASSWORD", ""), "Password of the Redis instance to scrape")
+		namespace               = flag.String("namespace", getEnv("REDIS_EXPORTER_NAMESPACE", "redis"), "Namespace for metrics")
+		checkKeys               = flag.String("check-keys", getEnv("REDIS_EXPORTER_CHECK_KEYS", ""), "Comma separated list of key-patterns to export value and length/size, searched for with SCAN")
+		checkSingleKeys         = flag.String("check-single-keys", getEnv("REDIS_EXPORTER_CHECK_SINGLE_KEYS", ""), "Comma separated list of single keys to export value and length/size")
+		checkStreams            = flag.String("check-streams", getEnv("REDIS_EXPORTER_CHECK_STREAMS", ""), "Comma separated list of stream-patterns to export info about streams, groups and consumers, searched for with SCAN")
+		checkSingleStreams      = flag.String("check-single-streams", getEnv("REDIS_EXPORTER_CHECK_SINGLE_STREAMS", ""), "Comma separated list of single streams to export info about streams, groups and consumers")
+		scriptPath              = flag.String("script", getEnv("REDIS_EXPORTER_SCRIPT", ""), "Path to Lua Redis script for collecting extra metrics")
+		listenAddress           = flag.String("web.listen-address", getEnv("REDIS_EXPORTER_WEB_LISTEN_ADDRESS", ":9121"), "Address to listen on for web interface and telemetry.")
+		metricPath              = flag.String("web.telemetry-path", getEnv("REDIS_EXPORTER_WEB_TELEMETRY_PATH", "/metrics"), "Path under which to expose metrics.")
+		logFormat               = flag.String("log-format", getEnv("REDIS_EXPORTER_LOG_FORMAT", "txt"), "Log format, valid options are txt and json")
+		configCommand           = flag.String("config-command", getEnv("REDIS_EXPORTER_CONFIG_COMMAND", "CONFIG"), "What to use for the CONFIG command")
+		connectionTimeout       = flag.String("connection-timeout", getEnv("REDIS_EXPORTER_CONNECTION_TIMEOUT", "15s"), "Timeout for connection to Redis instance")
+		tlsClientKeyFile        = flag.String("tls-client-key-file", getEnv("REDIS_EXPORTER_TLS_CLIENT_KEY_FILE", ""), "Name of the client key file (including full path) if the server requires TLS client authentication")
+		tlsClientCertFile       = flag.String("tls-client-cert-file", getEnv("REDIS_EXPORTER_TLS_CLIENT_CERT_FILE", ""), "Name of the client certificate file (including full path) if the server requires TLS client authentication")
+		tlsCaCertFile           = flag.String("tls-ca-cert-file", getEnv("REDIS_EXPORTER_TLS_CA_CERT_FILE", ""), "Name of the CA certificate file (including full path) if the server requires TLS client authentication")
+		tlsServerKeyFile        = flag.String("tls-server-key-file", getEnv("REDIS_EXPORTER_TLS_SERVER_KEY_FILE", ""), "Name of the server key file (including full path) if the web interface and telemetry should use TLS")
+		tlsServerCertFile       = flag.String("tls-server-cert-file", getEnv("REDIS_EXPORTER_TLS_SERVER_CERT_FILE", ""), "Name of the server certificate file (including full path) if the web interface and telemetry should use TLS")
+		isDebug                 = flag.Bool("debug", getEnvBool("REDIS_EXPORTER_DEBUG", false), "Output verbose debug information")
+		setClientName           = flag.Bool("set-client-name", getEnvBool("REDIS_EXPORTER_SET_CLIENT_NAME", true), "Whether to set client name to redis_exporter")
+		isTile38                = flag.Bool("is-tile38", getEnvBool("REDIS_EXPORTER_IS_TILE38", false), "Whether to scrape Tile38 specific metrics")
+		exportClientList        = flag.Bool("export-client-list", getEnvBool("REDIS_EXPORTER_EXPORT_CLIENT_LIST", false), "Whether to scrape Client List specific metrics")
+		showVersion             = flag.Bool("version", false, "Show version information and exit")
+		redisMetricsOnly        = flag.Bool("redis-only-metrics", getEnvBool("REDIS_EXPORTER_REDIS_ONLY_METRICS", true), "Whether to also export go runtime metrics")
+		pingOnConnect           = flag.Bool("ping-on-connect", getEnvBool("REDIS_EXPORTER_PING_ON_CONNECT", false), "Whether to ping the redis instance after connecting")
+		inclSystemMetrics       = flag.Bool("include-system-metrics", getEnvBool("REDIS_EXPORTER_INCL_SYSTEM_METRICS", false), "Whether to include system metrics like e.g. redis_total_system_memory_bytes")
+		skipTLSVerification     = flag.Bool("skip-tls-verification", getEnvBool("REDIS_EXPORTER_SKIP_TLS_VERIFICATION", false), "Whether to to skip TLS verification")
+		withAzureDiscoveryCreds = flag.Bool("with-azure-sd-credentials", getEnvBool("REDIS_EXPORTER_WITH_AZURE_DISCOVERY_CREDS", false), "Use azure api to obtain targets access keys")
+	)
 	flag.Parse()
 
 	switch *logFormat {
@@ -62,9 +117,11 @@ func main() {
 	default:
 		log.SetFormatter(&log.TextFormatter{})
 	}
-	log.Printf("Redis Metrics Exporter %s    build date: %s    sha1: %s    Go: %s",
-		VERSION, BUILD_DATE, COMMIT_SHA1,
+	log.Printf("Redis Metrics Exporter %s    build date: %s    sha1: %s    Go: %s    GOOS: %s    GOARCH: %s",
+		BuildVersion, BuildDate, BuildCommitSha,
 		runtime.Version(),
+		runtime.GOOS,
+		runtime.GOARCH,
 	)
 	if *isDebug {
 		log.SetLevel(log.DebugLevel)
@@ -77,19 +134,21 @@ func main() {
 		return
 	}
 
-	if *redisFile != "" && *redisAddr != "" {
-		log.Fatal("Cannot specify both redis.addr and redis.file")
+	to, err := time.ParseDuration(*connectionTimeout)
+	if err != nil {
+		log.Fatalf("Couldn't parse connection timeout duration, err: %s", err)
 	}
 
-	var addrs, passwords, aliases []string
-
-	switch {
-	case *redisFile != "":
-		var err error
-		addrs, passwords, aliases, err = exporter.LoadRedisFile(*redisFile)
+	var tlsClientCertificates []tls.Certificate
+	if (*tlsClientKeyFile != "") != (*tlsClientCertFile != "") {
+		log.Fatal("TLS client key file and cert file should both be present")
+	}
+	if *tlsClientKeyFile != "" && *tlsClientCertFile != "" {
+		cert, err := tls.LoadX509KeyPair(*tlsClientCertFile, *tlsClientKeyFile)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Couldn't load TLS client key pair, err: %s", err)
 		}
+<<<<<<< HEAD
 	case *useCfBindings:
 		addrs, passwords, aliases = exporter.GetCloudFoundryRedisBindings()
 	case *useAzureCaches:
@@ -100,58 +159,81 @@ func main() {
 		}
 	default:
 		addrs, passwords, aliases = exporter.LoadRedisArgs(*redisAddr, *redisPassword, *redisAlias, *separator)
+=======
+		tlsClientCertificates = append(tlsClientCertificates, cert)
+>>>>>>> v.1.12.1-dodo
 	}
 
-	exp, err := exporter.NewRedisExporter(
-		exporter.RedisHost{Addrs: addrs, Passwords: passwords, Aliases: aliases},
-		*namespace,
-		*checkSingleKeys,
-		*checkKeys,
+	var tlsCaCertificates *x509.CertPool
+	if *tlsCaCertFile != "" {
+		caCert, err := ioutil.ReadFile(*tlsCaCertFile)
+		if err != nil {
+			log.Fatalf("Couldn't load TLS Ca certificate, err: %s", err)
+		}
+		tlsCaCertificates = x509.NewCertPool()
+		tlsCaCertificates.AppendCertsFromPEM(caCert)
+	}
+
+	var ls []byte
+	if *scriptPath != "" {
+		if ls, err = ioutil.ReadFile(*scriptPath); err != nil {
+			log.Fatalf("Error loading script file %s    err: %s", *scriptPath, err)
+		}
+	}
+
+	azureRedises := NewAzureRedises(&AzureCredentials{
+		environment:    os.Getenv("AZURE_ENVIRONMENT"),
+		subscriptionID: os.Getenv("AZURE_SUBSCRIPTION_ID"),
+		tenantID:       os.Getenv("AZURE_TENANT_ID"),
+		clientID:       os.Getenv("AZURE_CLIENT_ID"),
+		clientSecret:   os.Getenv("AZURE_CLIENT_SECRET"),
+	})
+	if *withAzureDiscoveryCreds {
+		azureRedises.StartUpdateRoutine()
+	}
+
+	registry := prometheus.NewRegistry()
+	if !*redisMetricsOnly {
+		registry = prometheus.DefaultRegisterer.(*prometheus.Registry)
+	}
+
+	exp, err := NewRedisExporter(
+		*redisAddr,
+		Options{
+			User:                *redisUser,
+			Password:            *redisPwd,
+			Namespace:           *namespace,
+			ConfigCommandName:   *configCommand,
+			CheckKeys:           *checkKeys,
+			CheckSingleKeys:     *checkSingleKeys,
+			CheckStreams:        *checkStreams,
+			CheckSingleStreams:  *checkSingleStreams,
+			LuaScript:           ls,
+			InclSystemMetrics:   *inclSystemMetrics,
+			SetClientName:       *setClientName,
+			IsTile38:            *isTile38,
+			ExportClientList:    *exportClientList,
+			SkipTLSVerification: *skipTLSVerification,
+			ClientCertificates:  tlsClientCertificates,
+			CaCertificates:      tlsCaCertificates,
+			ConnectionTimeouts:  to,
+			MetricsPath:         *metricPath,
+			RedisMetricsOnly:    *redisMetricsOnly,
+			PingOnConnect:       *pingOnConnect,
+			Registry:            registry,
+			AzureRedises:        azureRedises,
+		},
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if *scriptPath != "" {
-		script, err := ioutil.ReadFile(*scriptPath)
-		if err != nil {
-			log.Fatalf("Error loading script file: %v", err)
-		}
-		exp.SetScript(script)
-	}
-
-	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "redis_exporter_build_info",
-		Help: "redis exporter build_info",
-	}, []string{"version", "commit_sha", "build_date", "golang_version"})
-	buildInfo.WithLabelValues(VERSION, COMMIT_SHA1, BUILD_DATE, runtime.Version()).Set(1)
-
-	if *redisMetricsOnly {
-		registry := prometheus.NewRegistry()
-		registry.Register(exp)
-		registry.Register(buildInfo)
-		handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
-		http.Handle(*metricPath, handler)
+	log.Infof("Providing metrics at %s%s", *listenAddress, *metricPath)
+	log.Debugf("Configured redis addr: %#v", *redisAddr)
+	if *tlsServerCertFile != "" && *tlsServerKeyFile != "" {
+		log.Debugf("Bind as TLS using cert %s and key %s", *tlsServerCertFile, *tlsServerKeyFile)
+		log.Fatal(http.ListenAndServeTLS(*listenAddress, *tlsServerCertFile, *tlsServerKeyFile, exp))
 	} else {
-		prometheus.MustRegister(exp)
-		prometheus.MustRegister(buildInfo)
-		http.Handle(*metricPath, promhttp.Handler())
+		log.Fatal(http.ListenAndServe(*listenAddress, exp))
 	}
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`
-<html>
-<head><title>Redis Exporter v` + VERSION + `</title></head>
-<body>
-<h1>Redis Exporter ` + VERSION + `</h1>
-<p><a href='` + *metricPath + `'>Metrics</a></p>
-</body>
-</html>
-						`))
-	})
-
-	log.Printf("Providing metrics at %s%s", *listenAddress, *metricPath)
-	log.Printf("Connecting to redis hosts: %#v", addrs)
-	log.Printf("Using alias: %#v", aliases)
-	log.Fatal(http.ListenAndServe(*listenAddress, nil))
 }
