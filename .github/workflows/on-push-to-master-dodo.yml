@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
         REPO_ORIGIN_VERSION: "1.12.1"
-        RELEASE_TAG: "${ REPO_ORIGIN_VERSION }.${{ github.run_number }}"
+        RELEASE_TAG: "1.12.1.${{ github.run_number }}"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -32,11 +32,11 @@ jobs:
           file: ./docker/Dockerfile.amd64
           tags: |
             dodopizza/redis_exporter:latest
-            dodopizza/redis_exporter:${ REPO_ORIGIN_VERSION }
-            dodopizza/redis_exporter:${ RELEASE_TAG }
+            dodopizza/redis_exporter:${{ env.REPO_ORIGIN_VERSION }}
+            dodopizza/redis_exporter:${{ env.RELEASE_TAG }}
           build-args: |
             SHA1=${{ github.sha }}
-            TAG=${ RELEASE_TAG }
+            TAG=${{ env.RELEASE_TAG }}
 
       - name: Create release
         id: create_release
@@ -44,7 +44,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${ RELEASE_TAG }
-          release_name: Release v${ RELEASE_TAG }
+          tag_name: ${{ env.RELEASE_TAG }}
+          release_name: Release v${{ env.RELEASE_TAG }}
           draft: false
           prerelease: false
