@@ -227,6 +227,7 @@ func NewRedisExporter(redisURI string, opts Options) (*Exporter, error) {
 			"connected_clients": "connected_clients",
 			"blocked_clients":   "blocked_clients",
 			"tracking_clients":  "tracking_clients",
+			"maxclients":        "maxclients",
 
 			// redis 2,3,4.x
 			"client_longest_output_list": "client_longest_output_list",
