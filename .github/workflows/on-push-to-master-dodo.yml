@@ -2,8 +2,8 @@ name: Build draft-release
 
 on:
   push:
-    branches:
-      - master
+    # branches:
+      # - master
 
 jobs:
   build:
