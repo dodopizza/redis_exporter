@@ -130,7 +130,7 @@ func (r *AzureRedises) updateRedisesList() error {
 			if EnableNonSslPort {
 				cred.url = "redis://" + *cache.Properties.HostName
 			} else {
-				cred.url = "rediss://" + *cache.Properties.HostName
+				cred.url = "rediss://" + *cache.Properties.HostName + ":6380"
 			}
 			if keys.PrimaryKey == nil {
 				log.Warnf("ERROR: You have no rights to read redis keys for %s\n", *cache.Name)
