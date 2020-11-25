@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
-	"errors"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/Azure/azure-sdk-for-go/services/redis/mgmt/2018-03-01/redis"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-06-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -88,6 +90,8 @@ func (r *AzureRedises) newAzureAutorizer() (azure.Environment, autorest.Authoriz
 
 	clientCreds := auth.NewClientCredentialsConfig(r.sp.clientID, r.sp.clientSecret, r.sp.tenantID)
 	env, err := azure.EnvironmentFromName(r.sp.environment)
+	clientCreds.AADEndpoint = env.ActiveDirectoryEndpoint
+	clientCreds.Resource = env.ResourceManagerEndpoint
 
 	if err != nil {
 		return env, nil, err
@@ -105,7 +109,7 @@ func (r *AzureRedises) updateRedisesList() error {
 	env, autorizer, err := r.newAzureAutorizer()
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Can't create new Azure authorizer")
 	}
 
 	redisClient := redis.NewClientWithBaseURI(env.ResourceManagerEndpoint, r.sp.subscriptionID)
@@ -117,7 +121,7 @@ func (r *AzureRedises) updateRedisesList() error {
 	groupsList, err := groupClient.List(context.Background(), "", nil)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Can't get resource groups list")
 	}
 
 	for _, resourceGroup := range groupsList.Values() {
